@@ -10,6 +10,8 @@ int length = sizeof(string) - 1;
 
 int main(int argc, char **argv)
 {
+    (void) argc;
+    (void) argv;
     InitTerminalDriver();
     InitTerminal(1);
 
