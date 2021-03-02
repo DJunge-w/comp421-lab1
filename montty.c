@@ -16,8 +16,6 @@ static cond_id_t inputcond[4];
  */
 static cond_id_t outputcond[4];
 
-(void) inputcond;
-(void) outputcond;
 
 /*
  * Require procedures for hardwares
@@ -69,5 +67,7 @@ TerminalDriverStatistics(struct termstat *stats)
 extern int
 InitTerminalDriver()
 {
+    (void) inputcond;
+    (void) outputcond;
     return 0;
 }
