@@ -16,6 +16,9 @@ static cond_id_t inputcond[4];
  */
 static cond_id_t outputcond[4];
 
+(void) inputcond;
+(void) outputcond;
+
 /*
  * Require procedures for hardwares
  */
