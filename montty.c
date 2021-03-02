@@ -53,7 +53,7 @@ extern int
 InitTerminal(int term)
 {
     (void) term;
-    reutrn 0;
+    return 0;
 }
 
 extern int
