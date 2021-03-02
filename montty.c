@@ -23,7 +23,8 @@ static cond_id_t outputcond[4];
 extern void
 ReceiveInterrupt(int term)
 {
-    (void) term;
+    char receive = ReadDataRegister(term);
+    WriteDataRegister(term, receive);
 }
 
 extern void
