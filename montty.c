@@ -53,8 +53,7 @@ ReadTerminal(int term, char *buf, int buflen)
 extern int
 InitTerminal(int term)
 {
-    (void) term;
-    return 0;
+    return InitHardware(term);
 }
 
 extern int
