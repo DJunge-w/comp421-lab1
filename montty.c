@@ -5,17 +5,27 @@
 #include <terminals.h>
 
 /*
+ * echo Buffer size
+ */
+#define SIZE_OF_ECHO_BUFFER 1024
+#define FAILED -1
+/*
  * A condition variable for each terminal's input register to wait on.  Declared
  * 'static' as with all variables that should only be seen inside
  * this monitor.
  */
-static cond_id_t inputcond[4];
+static cond_id_t inputcond[NUM_TERMINALS];
 
 /*
  * A condition variable for each terminal's output regitser to wait on.
  */
-static cond_id_t outputcond[4];
+static cond_id_t outputcond[NUM_TERMINALS];
 
+/*
+ * A single echo buffer
+ */
+static char * buffer;
+static 
 
 /*
  * Require procedures for hardwares
@@ -23,7 +33,7 @@ static cond_id_t outputcond[4];
 extern void
 ReceiveInterrupt(int term)
 {
-    char receive = ReadDataRegister(term);
+    char received = ReadDataRegister(term);
     WriteDataRegister(term, receive);
 }
 
@@ -69,5 +79,6 @@ InitTerminalDriver()
 {
     (void) inputcond;
     (void) outputcond;
+    buffer = malloc(sizeof(char)*1000);
     return 0;
 }
