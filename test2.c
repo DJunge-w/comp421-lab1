@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <threads.h>
+#include <unistd.h>
 #include <terminals.h>
 
 void writer(void *);
@@ -30,6 +31,7 @@ writer(void *arg)
 
     printf("Doing WriteTerminal... '");
     fflush(stdout);
+    sleep(30);
     status = WriteTerminal(1, string, length);
     printf("'. Done: status = %d.\n", status);
     fflush(stdout);

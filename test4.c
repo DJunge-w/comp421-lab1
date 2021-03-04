@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <threads.h>
 #include <terminals.h>
+#include <unistd.h>
 
 void writer1(void *);
 void writer2(void *);
@@ -33,7 +34,7 @@ writer1(void *arg)
 {
     (void) arg;
     int status;
-
+    sleep(30);
     status = WriteTerminal(1, string1, length1);
     if (status != length1)
 	fprintf(stderr, "Error: writer1 status = %d, length1 = %d\n",
@@ -45,7 +46,7 @@ writer2(void *arg)
 {
     (void) arg;
     int status;
-
+    sleep(30);
     status = WriteTerminal(1, string2, length2);
     if (status != length2)
 	fprintf(stderr, "Error: writer2 status = %d, length2 = %d\n",

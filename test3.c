@@ -3,6 +3,7 @@
 #include <string.h>
 #include <threads.h>
 #include <terminals.h>
+#include <unistd.h>
 
 void writer(void *);
 
@@ -42,6 +43,7 @@ writer(void *dummy)
 	}
 	strcpy(cp, "\n");
 	len = cp - buf + 1;
+	sleep(30);
 	status = WriteTerminal(1, buf, len);
 	if (status != len)
 	    fprintf(stderr, "Error: writer status = %d, len = %d\n",
