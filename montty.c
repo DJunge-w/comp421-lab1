@@ -324,6 +324,7 @@ WriteTerminal(int term, char *buf, int buflen)
             WriteDataRegister(term, '\r');
             enstack(&outputBuffers[term], '\n');
         } else {
+            printf("WriteDataRegister %c\n", first);
             WriteDataRegister(term, first);
         }
         echoing[term] = SUCCESS;
