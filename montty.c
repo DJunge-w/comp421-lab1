@@ -263,6 +263,7 @@ TransmitInterrupt(int term)
     if (outputBuffers[term].count == 0 && &outputBuffers[term] != &voidBuffer) {
         //immediately signal the waiting write terminal caller that write is
         //completed.
+        outputcompleted[term] = SUCCESS;
         CondSignal(outputempty[term]);
     }
     if (echoBuffers[term].count > 0) {
@@ -303,12 +304,15 @@ WriteTerminal(int term, char *buf, int buflen)
     while (writing[term] == SUCCESS) {
         CondWait(write[term]);
     }
+    printf("write terminal %s\n", "aquired writing");
     waitingwriters[term] = waitingwriters[term] - 1;
     writing[term] = SUCCESS;
     //assign the given buffer to input buffer's slot
     inputBuffers[term] = (queue_t){0,0,buflen, buflen, buf};
     //check if output and transmit interrupt loop is running
     if (echoing[term] == FAILED) {
+        printf("write terminal %s\n", "initiate writing");
+
         //initiate the first WriteRegister
         char first = dequeue(&inputBuffers[term]);
         //process special character '\n'
@@ -325,6 +329,7 @@ WriteTerminal(int term, char *buf, int buflen)
     while(outputcompleted[term] == FAILED) {
         CondWait(outputempty[term]);
     }
+
     outputcompleted[term] = FAILED;
     writing[term] = FAILED;
     if (waitingwriters[term] > 0) {
@@ -337,7 +342,6 @@ extern int
 ReadTerminal(int term, char *buf, int buflen)
 {
     Declare_Monitor_Entry_Procedure();
-    (void) term;
     //case buflen = 0, nothing to read
     if (buflen == 0) {
         return 0;
