@@ -309,18 +309,18 @@ WriteTerminal(int term, char *buf, int buflen)
     waitingwriters[term] = waitingwriters[term] - 1;
     writing[term] = SUCCESS;
     //assign the given buffer to input buffer's slot
-    inputBuffers[term] = (queue_t){0,0,buflen, buflen, buf};
+    outputBuffers[term] = (queue_t){0,0,buflen, buflen, buf};
     //check if output and transmit interrupt loop is running
     if (echoing[term] == FAILED) {
         printf("write terminal %s\n", "initiate writing");
 
         //initiate the first WriteRegister
-        char first = dequeue(&inputBuffers[term]);
+        char first = dequeue(&outputBuffers[term]);
         //process special character '\n'
         if (first == '\n') {
             specialMeet[term] = SUCCESS;
             WriteDataRegister(term, '\r');
-            enstack(&inputBuffers[term], '\n');
+            enstack(&outputBuffers[term], '\n');
         } else {
             WriteDataRegister(term, first);
         }
@@ -423,6 +423,7 @@ InitTerminalDriver()
         echoBuffers[i] = (queue_t){0, 0, 0, SIZE_OF_ECHO_BUFFER, malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};
         inputBuffers[i] = (queue_t){0, 0, 0, SIZE_OF_INPUT_BUFFER, malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};
         outputBuffers[i] = voidBuffer;
+        printf("initialize %d\n", &outputBuffers[i] == &voidBuffer);
         specialMeet[i] = FAILED;
     }
     return 0;
