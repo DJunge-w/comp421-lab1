@@ -335,7 +335,7 @@ WriteTerminal(int term, char *buf, int buflen)
     while(outputcompleted[term] == FAILED) {
         CondWait(outputempty[term]);
     }
-
+    outputBuffers[term] = voidBuffer;
     outputcompleted[term] = FAILED;
     writing[term] = FAILED;
     if (waitingwriters[term] > 0) {
@@ -385,7 +385,7 @@ ReadTerminal(int term, char *buf, int buflen)
     reading[term] = FAILED;
     //wake up other readers
     if (waitingreaders[term] > 0) {
-        CondSignal(write[term]);
+        CondSignal(read[term]);
     }
     return count;
 }
