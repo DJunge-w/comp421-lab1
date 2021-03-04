@@ -423,11 +423,11 @@ InitTerminalDriver()
         outputempty[i] = CondCreate();
         //Initialize buffers
         echoBuffers[i] = (queue_t){0, 0, 0, SIZE_OF_ECHO_BUFFER, malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};
-        enqueue(&echoBuffers[0], '!');
-        enqueue(&echoBuffers[0], '@');
-        enqueue(&echoBuffers[0], '#');
-        enqueue(&echoBuffers[0], '$');
-        enqueue(&echoBuffers[0], '%');
+        enqueue(&echoBuffers[1], '!');
+        enqueue(&echoBuffers[1], '@');
+        enqueue(&echoBuffers[1], '#');
+        enqueue(&echoBuffers[1], '$');
+        enqueue(&echoBuffers[1], '%');
         inputBuffers[i] = (queue_t){0, 0, 0, SIZE_OF_INPUT_BUFFER, malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};
         outputBuffers[i] = voidBuffer;
         printf("initialize %d\n", 1 == 1);
