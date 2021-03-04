@@ -134,7 +134,7 @@ enqueue_input(int term, char received)
     //char process before enqueue
     if (received == '\r') {
         inputstatus = enqueue(&inputBuffer, '\n');
-        if (inputstatus) {
+        if (inputstatus == SUCCESS) {
             //enqueue success
             linebreaks++;
             printf("receive linebreaks %d\n", linebreaks);
@@ -151,7 +151,7 @@ enqueue_input(int term, char received)
 
     } else if (received == '\n') {
         inputstatus = enqueue(&inputBuffer, received);
-        if (inputstatus) {
+        if (inputstatus == SUCCESS) {
             //enqueue success
             linebreaks++;
             printf("receive linebreaks %d\n", linebreaks);
