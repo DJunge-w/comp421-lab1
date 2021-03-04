@@ -309,7 +309,7 @@ WriteTerminal(int term, char *buf, int buflen)
         echoing[term] = SUCCESS;
     }
     writing[term] = FAILED;
-    if (waitingwriters > 0) {
+    if (waitingwriters[term] > 0) {
         CondSignal(write[term]);
     }
     return 0;
