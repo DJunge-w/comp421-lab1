@@ -8,38 +8,38 @@
  * echo Buffer size
  */
 #define SIZE_OF_ECHO_BUFFER 1024
-#define SIZE_OF_INPUT_BUFFER 10
+#define SIZE_OF_INPUT_BUFFER 1024
 #define FAILED -1
 #define SUCCESS 0
 
 /*
  * state indicating whether output loop is establish
  */
-static int echoing = FAILED;
+static int echoing[NUM_TERMINALS];
 /*
  * Number of reader waiting
  */
-static int waitingreaders = 0;
+static int waitingreaders[NUM_TERMINALS];
 /*
  * state whether other reader is reading
  */
-static int reading = FAILED;
+static int reading[NUM_TERMINALS];
 /*
  * number of line breaks in the input buffer
  */
-static int linebreaks = 0;
+static int linebreaks[NUM_TERMINALS];
 
 /*
  * A condition variable for each readTerminal to wait on, only one reader
  * at a time.
  */
-static cond_id_t read;
+static cond_id_t read[NUM_TERMINALS];
 
 /*
  * A condition variable for each readTerminal to wait on, only afer a line
  * terminated by new line charater can one reader return.
  */
-static cond_id_t linecompleted;
+static cond_id_t linecompleted[NUM_TERMINALS];
 
 /*
  * character buffer data structure
@@ -87,49 +87,49 @@ static char destack(queue_t *queue) {
 /*
  * A single echo buffer
  */
-static queue_t echoBuffer;
+static queue_t echoBuffers[NUM_TERMINALS];
 
 /*
  * A single input buffer
  */
-static queue_t inputBuffer;
+static queue_t inputBuffers[NUM_TERMINALS];
 
 static void
 enqueue_echo(int term, char received)
 {
-    if (echoing == FAILED)
+    if (echoing[term] == FAILED)
     {
         //not in the write and transmit interrupt loop
         //send the first WriteDataRegister call
         if (received == '\r') {
             WriteDataRegister(term, '\r');
-            enqueue(&echoBuffer, '\n');
+            enqueue(&echoBuffers[term], '\n');
         } else if (received == '\n') {
             WriteDataRegister(term, '\r');
-            enqueue(&echoBuffer, '\n');
+            enqueue(&echoBuffers[term], '\n');
         } else if (received == '\b' || received == '\177') {
             WriteDataRegister(term, '\b');
-            enqueue(&echoBuffer, ' ');
-            enqueue(&echoBuffer, '\b');
+            enqueue(&echoBuffers[term], ' ');
+            enqueue(&echoBuffers[term], '\b');
         } else {
             //any other character
             WriteDataRegister(term, received);
         }
-        echoing = SUCCESS;
+        echoing[term] = SUCCESS;
     } else {
         if (received == '\r') {
-            enqueue(&echoBuffer, '\r');
-            enqueue(&echoBuffer, '\n');
+            enqueue(&echoBuffers[term], '\r');
+            enqueue(&echoBuffers[term], '\n');
         } else if (received == '\n') {
-            enqueue(&echoBuffer, '\r');
-            enqueue(&echoBuffer, '\n');
+            enqueue(&echoBuffers[term], '\r');
+            enqueue(&echoBuffers[term], '\n');
         } else if (received == '\b' || received == '\177') {
-            enqueue(&echoBuffer, '\b');
-            enqueue(&echoBuffer, ' ');
-            enqueue(&echoBuffer, '\b');
+            enqueue(&echoBuffers[term], '\b');
+            enqueue(&echoBuffers[term], ' ');
+            enqueue(&echoBuffers[term], '\b');
         } else {
             //any other character
-            enqueue(&echoBuffer, received);
+            enqueue(&echoBuffers[term], received);
         }
     }
 }
@@ -144,15 +144,15 @@ enqueue_input(int term, char received)
     int inputstatus;
     //char process before enqueue
     if (received == '\r') {
-        inputstatus = enqueue(&inputBuffer, '\n');
+        inputstatus = enqueue(&inputBuffers[term], '\n');
         if (inputstatus == SUCCESS) {
             //enqueue success
-            linebreaks++;
-            printf("receive linebreaks %d\n", linebreaks);
+            linebreaks[term] = linebreaks[term] + 1;
+            printf("receive linebreaks %d\n", linebreaks[term]);
             fflush(stdout);
-            if (linebreaks == 1) {
+            if (linebreaks[term] == 1) {
                 //signal readers that the line is completed.
-                CondSignal(linecompleted);
+                CondSignal(linecompleted[term]);
             }
             return inputstatus;
         } else {
@@ -161,15 +161,15 @@ enqueue_input(int term, char received)
         }
 
     } else if (received == '\n') {
-        inputstatus = enqueue(&inputBuffer, received);
+        inputstatus = enqueue(&inputBuffers[term], received);
         if (inputstatus == SUCCESS) {
             //enqueue success
-            linebreaks++;
-            printf("receive linebreaks %d\n", linebreaks);
+            linebreaks[term] = linebreaks[term] + 1;
+            printf("receive linebreaks %d\n", linebreaks[term]);
             fflush(stdout);
-            if (linebreaks == 1) {
+            if (linebreaks[term] == 1) {
                 //signal readers that the line is completed.
-                CondSignal(linecompleted);
+                CondSignal(linecompleted[term]);
             }
             return inputstatus;
         } else {
@@ -178,15 +178,15 @@ enqueue_input(int term, char received)
         }
     } else if (received == '\b' || received == '\177') {
         //remove one character from input buffer
-        if (inputBuffer.count > 0) {
-            destack(&inputBuffer);
+        if (inputBuffers[term].count > 0) {
+            destack(&inputBuffers[term]);
             return SUCCESS;
         }
         return FAILED;
         //empty input buffer, do nothing
     } else {
         //any other charater
-        inputstatus = enqueue(&inputBuffer, received);
+        inputstatus = enqueue(&inputBuffers[term], received);
         return inputstatus;
     }
 }
@@ -215,12 +215,12 @@ extern void
 TransmitInterrupt(int term)
 {
     Declare_Monitor_Entry_Procedure();
-    if (echoBuffer.count > 0) {
-        char received = dequeue(&echoBuffer);
+    if (echoBuffers[term].count > 0) {
+        char received = dequeue(&echoBuffers[term]);
         WriteDataRegister(term, received);
     } else {
         //nothing to output
-        echoing = FAILED;
+        echoing[term] = FAILED;
     }
 }
 
@@ -243,40 +243,40 @@ ReadTerminal(int term, char *buf, int buflen)
     if (buflen == 0) {
         return 0;
     }
-    waitingreaders++;
-    while (reading == SUCCESS){
+    waitingreaders[term] = waitingreaders[term] + 1;
+    while (reading[term] == SUCCESS){
         //Wait for other reader to complete
-        CondWait(read);
+        CondWait(read[term]);
     }
     printf("%s\n", "reader wait success");
     fflush(stdout);
     //Current reader is reading
-    waitingreaders--;
-    reading = SUCCESS;
-    printf("linebreaks %d\n", linebreaks);
+    waitingreaders[term] = waitingreaders[term] - 1;
+    reading[term] = SUCCESS;
+    printf("linebreaks %d\n", linebreaks[term]);
     fflush(stdout);
-    while (linebreaks <= 0) {
+    while (linebreaks[term] <= 0) {
         //wait for the line to complete
-        CondWait(linecompleted);
+        CondWait(linecompleted[term]);
     }
     printf("%s\n", "line completed");
     fflush(stdout);
     //read the line
     int count = 0;
     while (count < buflen) {
-        char curr = dequeue(&inputBuffer);
+        char curr = dequeue(&inputBuffers[term]);
         buf[count] = curr;
         count++;
         if (curr == '\n') {
-            linebreaks--;
+            linebreaks[term] = linebreaks[term] - 1;
             break;
         }
     }
     //completed reading
-    reading = FAILED;
+    reading[term] = FAILED;
     //wake up other readers
-    if (waitingreaders > 0) {
-        CondSignal(read);
+    if (waitingreaders[term] > 0) {
+        CondSignal(read[term]);
     }
     return count;
 }
@@ -300,10 +300,19 @@ extern int
 InitTerminalDriver()
 {
     Declare_Monitor_Entry_Procedure();
-    read = CondCreate();
-    linecompleted = CondCreate();
-    //Initialize buffers
-    echoBuffer = (queue_t){0, 0, 0, SIZE_OF_ECHO_BUFFER, malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};
-    inputBuffer = (queue_t){0, 0, 0, SIZE_OF_INPUT_BUFFER, malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};
+    int i;
+    for (i = 0; i < NUM_TERMINALS; i++) {
+        //Initilaize states
+        echoing[i] = FAILED;
+        waitingreaders[i] = 0;
+        reading[i] = FAILED;
+        linebreaks[i] = 0;
+        //Initialize condition variables
+        read[i] = CondCreate();
+        linecompleted[i] = CondCreate();
+        //Initialize buffers
+        echoBuffers[i] = (queue_t){0, 0, 0, SIZE_OF_ECHO_BUFFER, malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};
+        inputBuffers[i] = (queue_t){0, 0, 0, SIZE_OF_INPUT_BUFFER, malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};
+    }
     return 0;
 }
