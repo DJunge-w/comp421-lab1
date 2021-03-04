@@ -73,6 +73,17 @@ static int enqueue(queue_t *queue, char input) {
     return SUCCESS;
 }
 
+static char destack(queue_t *queue) {
+    if (queue->count == 0) {
+        return (char) 0;
+    }
+    queue->in = (queue->in - 1) % queue->size;
+    char output = queue->data[queue->in];
+    queue->data[queue->in] = (char) 0;
+    queue->count--;
+    return output;
+}
+
 /*
  * A single echo buffer
  */
@@ -168,7 +179,7 @@ enqueue_input(int term, char received)
     } else if (received == '\b' || received == '\177') {
         //remove one character from input buffer
         if (inputBuffer.count > 0) {
-            dequeue(&inputBuffer);
+            destack(&inputBuffer);
             return SUCCESS;
         }
         return FAILED;
