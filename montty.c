@@ -385,7 +385,7 @@ ReadTerminal(int term, char *buf, int buflen)
     reading[term] = FAILED;
     //wake up other readers
     if (waitingreaders[term] > 0) {
-        CondSignal(read[term]);
+        CondSignal(write[term]);
     }
     return count;
 }
