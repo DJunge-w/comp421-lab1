@@ -15,6 +15,7 @@ int main(int argc, char **argv)
     (void) argv;
     InitTerminalDriver();
     InitTerminal(1);
+    sleep(40);
 
     ThreadCreate(writer, NULL);
 
@@ -31,7 +32,6 @@ writer(void *arg)
 
     printf("Doing WriteTerminal... '");
     fflush(stdout);
-    sleep(30);
     status = WriteTerminal(1, string, length);
     printf("'. Done: status = %d.\n", status);
     fflush(stdout);

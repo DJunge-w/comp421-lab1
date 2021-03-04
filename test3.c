@@ -14,6 +14,7 @@ int main(int argc, char **argv)
     InitTerminalDriver();
     InitTerminal(1);
 
+    sleep(40);
     ThreadCreate(writer, NULL);
 
     ThreadWaitAll();
@@ -43,7 +44,6 @@ writer(void *dummy)
 	}
 	strcpy(cp, "\n");
 	len = cp - buf + 1;
-	sleep(30);
 	status = WriteTerminal(1, buf, len);
 	if (status != len)
 	    fprintf(stderr, "Error: writer status = %d, len = %d\n",

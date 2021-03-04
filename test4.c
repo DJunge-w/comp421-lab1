@@ -20,6 +20,7 @@ main(int argc, char **argv)
     (void) argv;
     InitTerminalDriver();
     InitTerminal(1);
+    sleep(40);
 
     ThreadCreate(writer1, NULL);
     ThreadCreate(writer2, NULL);
@@ -34,7 +35,6 @@ writer1(void *arg)
 {
     (void) arg;
     int status;
-    sleep(30);
     status = WriteTerminal(1, string1, length1);
     if (status != length1)
 	fprintf(stderr, "Error: writer1 status = %d, length1 = %d\n",
@@ -46,7 +46,6 @@ writer2(void *arg)
 {
     (void) arg;
     int status;
-    sleep(30);
     status = WriteTerminal(1, string2, length2);
     if (status != length2)
 	fprintf(stderr, "Error: writer2 status = %d, length2 = %d\n",
