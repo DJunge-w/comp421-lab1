@@ -31,6 +31,7 @@ main(int argc, char **argv)
 void
 writer1(void *arg)
 {
+    (void) arg;
     int status;
 
     status = WriteTerminal(1, string1, length1);
@@ -42,6 +43,7 @@ writer1(void *arg)
 void
 writer2(void *arg)
 {
+    (void) arg;
     int status;
 
     status = WriteTerminal(1, string2, length2);

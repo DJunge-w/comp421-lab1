@@ -21,9 +21,17 @@ static int echoing[NUM_TERMINALS];
  */
 static int waitingreaders[NUM_TERMINALS];
 /*
+ * Number of writer waiting
+ */
+static int waitingwriters[NUM_TERMINALS];
+/*
  * state whether other reader is reading
  */
 static int reading[NUM_TERMINALS];
+/*
+ * state whether other writer is writing
+ */
+static int writing[NUM_TERMINALS];
 /*
  * number of line breaks in the input buffer
  */
@@ -34,7 +42,11 @@ static int linebreaks[NUM_TERMINALS];
  * at a time.
  */
 static cond_id_t read[NUM_TERMINALS];
-
+/*
+ * A condition variable for each writeTerminal to wait on, only one writer
+ * at a time.
+ */
+static cond_id_t write[NUM_TERMINALS];
 /*
  * A condition variable for each readTerminal to wait on, only afer a line
  * terminated by new line charater can one reader return.
@@ -273,6 +285,13 @@ WriteTerminal(int term, char *buf, int buflen)
         //given buffer is empty, return immediately
         return 0;
     }
+    waitingwriters[term] = waitingwriters[term] + 1;
+    //aquire exclusion on write
+    while (writing[term] == SUCCESS) {
+        CondWait(write[term]);
+    }
+    waitingwriters[term] = waitingwriters[term] - 1;
+    writing[term] = SUCCESS;
     //assign the given buffer to input buffer's slot
     inputBuffers[term] = (queue_t){0,0,buflen, buflen, buf};
     //check if output and transmit interrupt loop is running
@@ -289,7 +308,10 @@ WriteTerminal(int term, char *buf, int buflen)
         }
         echoing[term] = SUCCESS;
     }
-
+    writing[term] = FAILED;
+    if (waitingwriters > 0) {
+        CondSignal(write[term]);
+    }
     return 0;
 }
 
@@ -364,10 +386,13 @@ InitTerminalDriver()
         //Initilaize states
         echoing[i] = FAILED;
         waitingreaders[i] = 0;
+        waitingwriters[i] = 0;
         reading[i] = FAILED;
+        writing[i] = FAILED;
         linebreaks[i] = 0;
         //Initialize condition variables
         read[i] = CondCreate();
+        write[i] = CondCreate();
         linecompleted[i] = CondCreate();
         //Initialize buffers
         echoBuffers[i] = (queue_t){0, 0, 0, SIZE_OF_ECHO_BUFFER, malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};

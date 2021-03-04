@@ -24,6 +24,7 @@ int main(int argc, char **argv)
 void
 writer(void *dummy)
 {
+    (void) dummy;
     int i, j, n;
     int status;
     char buf[128];

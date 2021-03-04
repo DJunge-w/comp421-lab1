@@ -25,6 +25,7 @@ int main(int argc, char **argv)
 void
 writer(void *arg)
 {
+    (void) arg;
     int status;
 
     printf("Doing WriteTerminal... '");
