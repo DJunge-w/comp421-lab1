@@ -12,12 +12,28 @@
 #define FAILED -1
 #define SUCCESS 0
 
+/*
+ * state indicating whether output loop is establish
+ */
 static int echoing = FAILED;
+/*
+ * Number of reader waiting
+ */
+static int waitingreaders = 0;
+/*
+ * state whether other reader is reading
+ */
+static int reading = FAILED;
+/*
+ * number of line breaks in the input buffer
+ */
+static int linebreaks = 0;
+
 /*
  * A condition variable for each readTerminal to wait on, only one reader
  * at a time.
  */
-static cond_id_t reading;
+static cond_id_t read;
 
 /*
  * A condition variable for each readTerminal to wait on, only afer a line
@@ -93,13 +109,20 @@ ReceiveInterrupt(int term)
     char received = ReadDataRegister(term);
     //add received to input buffer
     int input_status = enqueue(&inputBuffer, received);
+    if (received == '\n') {
+        linebreaks++;
+        if (linebreaks == 1) {
+            //signal readers that the line is completed.
+            CondSignal(linecompleted);
+        }
+    }
+    //add received to echo buffer
     if (input_status) {
         //when input buffer is full
         enqueue_echo(term, '\a');
     } else {
         enqueue_echo(term, received);
     }
-
 
 }
 
@@ -131,9 +154,39 @@ ReadTerminal(int term, char *buf, int buflen)
 {
     Declare_Monitor_Entry_Procedure();
     (void) term;
-    (void) buf;
-    (void) buflen;
-    return 0;
+    //case buflen = 0, nothing to read
+    if (buflen == 0) {
+        return 0;
+    }
+    waitingreaders++;
+    while (reading == SUCCESS){
+        //Wait for other reader to complete
+        CondWait(read);
+    }
+    //Current reader is reading
+    waitingreaders--;
+    reading = SUCCESS;
+    while (linebreaks <= 0) {
+        //wait for the line to complete
+        CondWait(linecompleted);
+    }
+    //read the line
+    int count = 0;
+    while (count < buflen) {
+        char curr = dequeue(&inputBuffer);
+        buf[count] = curr;
+        if (curr == '\n') {
+            linebreaks--;
+            break;
+        }
+    }
+    //completed reading
+    reading = FAILED;
+    //wake up other readers
+    if (waitingreaders > 0) {
+        CondSignal(read);
+    }
+    return count;
 }
 
 extern int
@@ -155,8 +208,8 @@ extern int
 InitTerminalDriver()
 {
     Declare_Monitor_Entry_Procedure();
-    (void) reading;
-    (void) linecompleted;
+    read = CondCreate();
+    linecompleted = CondCreate();
     //Initialize buffers
     echoBuffer = (queue_t){0, 0, 0, SIZE_OF_ECHO_BUFFER, malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};
     inputBuffer = (queue_t){0, 0, 0, SIZE_OF_INPUT_BUFFER, malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};
