@@ -99,6 +99,12 @@ enqueue_echo(int term, char received)
         enqueue(&echoBuffer, received);
     }
 }
+
+/*
+ * enqueue input buffer
+ */
+static void
+enqueue_
 /*
  * Require procedures for hardwares
  */
@@ -111,6 +117,8 @@ ReceiveInterrupt(int term)
     int input_status = enqueue(&inputBuffer, received);
     if (received == '\n') {
         linebreaks++;
+        printf("receive linebreaks %d\n", linebreaks);
+        fflush(stdout);
         if (linebreaks == 1) {
             //signal readers that the line is completed.
             CondSignal(linecompleted);
@@ -163,18 +171,25 @@ ReadTerminal(int term, char *buf, int buflen)
         //Wait for other reader to complete
         CondWait(read);
     }
+    printf("%s\n", "reader wait success");
+    fflush(stdout);
     //Current reader is reading
     waitingreaders--;
     reading = SUCCESS;
+    printf("linebreaks %d\n", linebreaks);
+    fflush(stdout);
     while (linebreaks <= 0) {
         //wait for the line to complete
         CondWait(linecompleted);
     }
+    printf("%s\n", "line completed");
+    fflush(stdout);
     //read the line
     int count = 0;
     while (count < buflen) {
         char curr = dequeue(&inputBuffer);
         buf[count] = curr;
+        count++;
         if (curr == '\n') {
             linebreaks--;
             break;
