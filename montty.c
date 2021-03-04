@@ -8,21 +8,22 @@
  * echo Buffer size
  */
 #define SIZE_OF_ECHO_BUFFER 1024
+#define SIZE_OF_INPUT_BUFFER 10
 #define FAILED -1
 #define SUCCESS 0
 
 static int echoing = FAILED;
 /*
- * A condition variable for each terminal's input register to wait on.  Declared
- * 'static' as with all variables that should only be seen inside
- * this monitor.
+ * A condition variable for each readTerminal to wait on, only one reader
+ * at a time.
  */
-static cond_id_t inputcond[NUM_TERMINALS];
+static cond_id_t reading;
 
 /*
- * A condition variable for each terminal's output regitser to wait on.
+ * A condition variable for each readTerminal to wait on, only afer a line
+ * terminated by new line charater can one reader return.
  */
-static cond_id_t outputcond[NUM_TERMINALS];
+static cond_id_t linecompleted;
 
 /*
  * character buffer data structure
@@ -55,11 +56,33 @@ static int enqueue(queue_t *queue, char input) {
     queue->count++;
     return SUCCESS;
 }
+
 /*
  * A single echo buffer
  */
 static queue_t echoBuffer;
 
+/*
+ * A single input buffer
+ */
+static queue_t inputBuffer;
+
+/*
+ * enqueue echo buffer
+ */
+static void
+enqueue_echo(char received)
+{
+    if (echoing == FAILED)
+    {
+        //not in the write and transmit interrupt loop
+        //send the first WriteDataRegister call
+        WriteDataRegister(term, received);
+        echoing = SUCCESS;
+    } else {
+        enqueue(&echoBuffer, received);
+    }
+}
 /*
  * Require procedures for hardwares
  */
@@ -68,14 +91,16 @@ ReceiveInterrupt(int term)
 {
     Declare_Monitor_Entry_Procedure();
     char received = ReadDataRegister(term);
-    if (echoing == FAILED)
-    {
-        //not in the write and transmit interrupt loop
-        WriteDataRegister(term, received);
-        echoing = SUCCESS;
+    //add received to input buffer
+    int input_status = enqueue(&inputBuffer, received);
+    if (input_status) {
+        //when input buffer is full
+        enqueue_echo('\a');
     } else {
-        enqueue(&echoBuffer, received);
+        enqueue_echo(received);
     }
+
+
 }
 
 extern void
@@ -130,8 +155,10 @@ extern int
 InitTerminalDriver()
 {
     Declare_Monitor_Entry_Procedure();
-    (void) inputcond;
-    (void) outputcond;
+    (void) reading;
+    (void) linecompleted;
+    //Initialize buffers
     echoBuffer = (queue_t){0, 0, 0, SIZE_OF_ECHO_BUFFER, malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};
+    inputBuffer = (queue_t){0, 0, 0, SIZE_OF_INPUT_BUFFER, malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};
     return 0;
 }
