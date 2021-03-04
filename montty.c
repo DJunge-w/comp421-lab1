@@ -284,6 +284,7 @@ TransmitInterrupt(int term)
         } else {
             //normal character, write as is
             WriteDataRegister(term, received);
+            printf("transmit %s\n", received);
         }
     } else {
         //nothing to output
