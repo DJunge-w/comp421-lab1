@@ -83,9 +83,6 @@ static queue_t echoBuffer;
  */
 static queue_t inputBuffer;
 
-/*
- * enqueue echo buffer
- */
 static void
 enqueue_echo(int term, char received)
 {
@@ -93,18 +90,96 @@ enqueue_echo(int term, char received)
     {
         //not in the write and transmit interrupt loop
         //send the first WriteDataRegister call
-        WriteDataRegister(term, received);
+        if (received == '\r') {
+            WriteDataRegister(term, '\r');
+            enqueue(&echoBuffer, '\n');
+        } else if (received == '\n') {
+            WriteDataRegister(term, '\r');
+            enqueue(&echoBuffer, '\n');
+        } else if (received == '\b' || received == '\177') {
+            WriteDataRegister(term, '\b');
+            enqueue(&echoBuffer, ' ');
+            enqueue(&echoBuffer, '\b');
+        } else {
+            //any other character
+            WriteDataRegister(term, received);
+        }
         echoing = SUCCESS;
     } else {
-        enqueue(&echoBuffer, received);
+        if (received == '\r') {
+            enqueue(&echoBuffer, '\r');
+            enqueue(&echoBuffer, '\n');
+        } else if (received == '\n') {
+            enqueue(&echoBuffer, '\r');
+            enqueue(&echoBuffer, '\n');
+        } else if (received == '\b' || received == '\177') {
+            enqueue(&echoBuffer, '\b');
+            enqueue(&echoBuffer, ' ');
+            enqueue(&echoBuffer, '\b');
+        } else {
+            //any other character
+            enqueue(&echoBuffer, received);
+        }
     }
 }
 
 /*
  * enqueue input buffer
  */
-static void
-enqueue_
+static int
+enqueue_input(int term, char received)
+{
+    (void) term;
+    int inputstatus;
+    //char process before enqueue
+    if (received == '\r') {
+        inputstatus = enqueue(&inputBuffer, '\n');
+        if (inputstatus) {
+            //enqueue success
+            linebreaks++;
+            printf("receive linebreaks %d\n", linebreaks);
+            fflush(stdout);
+            if (linebreaks == 1) {
+                //signal readers that the line is completed.
+                CondSignal(linecompleted);
+            }
+            return inputstatus;
+        } else {
+            //queue full, enqueue failed
+            return inputstatus;
+        }
+
+    } else if (received == '\n') {
+        inputstatus = enqueue(&inputBuffer, received);
+        if (inputstatus) {
+            //enqueue success
+            linebreaks++;
+            printf("receive linebreaks %d\n", linebreaks);
+            fflush(stdout);
+            if (linebreaks == 1) {
+                //signal readers that the line is completed.
+                CondSignal(linecompleted);
+            }
+            return inputstatus;
+        } else {
+            //queue full, enqueue failed
+            return inputstatus;
+        }
+    } else if (received == '\b' || received == '\177') {
+        //remove one character from input buffer
+        if (inputBuffer.count > 0) {
+            dequeue(&inputBuffer);
+            return SUCCESS;
+        }
+        return FAILED;
+        //empty input buffer, do nothing
+    } else {
+        //any other charater
+        inputstatus = enqueue(&inputBuffer, received);
+        return inputstatus;
+    }
+}
+
 /*
  * Require procedures for hardwares
  */
@@ -114,18 +189,9 @@ ReceiveInterrupt(int term)
     Declare_Monitor_Entry_Procedure();
     char received = ReadDataRegister(term);
     //add received to input buffer
-    int input_status = enqueue(&inputBuffer, received);
-    if (received == '\n') {
-        linebreaks++;
-        printf("receive linebreaks %d\n", linebreaks);
-        fflush(stdout);
-        if (linebreaks == 1) {
-            //signal readers that the line is completed.
-            CondSignal(linecompleted);
-        }
-    }
+    int input_status = enqueue_input(term, received);
     //add received to echo buffer
-    if (input_status) {
+    if (input_status == FAILED) {
         //when input buffer is full
         enqueue_echo(term, '\a');
     } else {
