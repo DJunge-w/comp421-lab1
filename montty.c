@@ -67,8 +67,8 @@ static cond_id_t outputempty[NUM_TERMINALS];
 typedef struct {
     size_t in;
     size_t out;
-    size_t count;
-    size_t size;
+    int count;
+    int size;
     char* data;
 } queue_t;
 
@@ -117,7 +117,7 @@ static int enstack(queue_t *queue, char input) {
 /*
  * Void queue
  */
-static queue_t voidBuffer = (queue_t){0,0,0,0, NULL};
+static queue_t voidBuffer = (queue_t){0,0,0,-1, NULL};
 
 /*
  * One echo buffer for each terminal
@@ -260,12 +260,14 @@ extern void
 TransmitInterrupt(int term)
 {
     Declare_Monitor_Entry_Procedure();
-    if (outputBuffers[term].count == 0 && &outputBuffers[term] != &voidBuffer) {
+    if (outputBuffers[term].count == 0 && outputBuffers[term].size != -1) {
         //immediately signal the waiting write terminal caller that write is
         //completed.
         outputcompleted[term] = SUCCESS;
         CondSignal(outputempty[term]);
     }
+    printf("transmitInterupt term %d\n", term);
+    printf("transmitInterupt term %d\n", echoBuffers[term].count);
     if (echoBuffers[term].count > 0) {
         //first output echo buffer
         char received = dequeue(&echoBuffers[term]);
