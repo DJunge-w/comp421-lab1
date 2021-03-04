@@ -71,7 +71,7 @@ static queue_t inputBuffer;
  * enqueue echo buffer
  */
 static void
-enqueue_echo(char received)
+enqueue_echo(int term, char received)
 {
     if (echoing == FAILED)
     {
@@ -95,9 +95,9 @@ ReceiveInterrupt(int term)
     int input_status = enqueue(&inputBuffer, received);
     if (input_status) {
         //when input buffer is full
-        enqueue_echo('\a');
+        enqueue_echo(term, '\a');
     } else {
-        enqueue_echo(received);
+        enqueue_echo(term, received);
     }
 
 
