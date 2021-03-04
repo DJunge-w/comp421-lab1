@@ -311,10 +311,10 @@ WriteTerminal(int term, char *buf, int buflen)
     //assign the given buffer to input buffer's slot
     outputBuffers[term] = (queue_t){0,0,buflen, buflen, buf};
     printf("writeTerminal %d\n", &outputBuffers[term] == &voidBuffer);
-    printf("writeTerminal %d\n", outputBuffers[term].count);
-    printf("writeTerminal %d\n", voidBuffer.count);
-    printf("writeTerminal %d\n", &voidBuffer);
-    printf("writeTerminal %d\n", &outputBuffers[term]);
+    printf("writeTerminal %zu\n", outputBuffers[term].count);
+    printf("writeTerminal %zu\n", voidBuffer.count);
+    printf("writeTerminal %p\n", &voidBuffer);
+    printf("writeTerminal %p\n", &outputBuffers[term]);
     //check if output and transmit interrupt loop is running
     if (echoing[term] == FAILED) {
         printf("write terminal %s\n", "initiate writing");
