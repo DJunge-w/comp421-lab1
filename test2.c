@@ -21,6 +21,7 @@ int main(int argc, char **argv)
 
     ThreadWaitAll();
 
+    sleep(20)
     exit(0);
 }
 

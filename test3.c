@@ -18,7 +18,7 @@ int main(int argc, char **argv)
     ThreadCreate(writer, NULL);
 
     ThreadWaitAll();
-
+    sleep(20);
     exit(0);
 }
 
