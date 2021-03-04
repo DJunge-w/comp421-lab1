@@ -84,15 +84,40 @@ static char destack(queue_t *queue) {
     return output;
 }
 
+static int enstack(queue_t *queue, char input) {
+    if (queue->count == queue->size) {
+        return FAILED;
+    }
+    queue->out = (queue->out - 1) % queue->size;
+    queue->data[queue->out] = input;
+    queue->count++;
+    return SUCCESS;
+}
+
 /*
- * A single echo buffer
+ * Void queue
+ */
+static queue_t voidBuffer = (queue_t){0,0,0,0, NULL};
+
+/*
+ * One echo buffer for each terminal
  */
 static queue_t echoBuffers[NUM_TERMINALS];
 
 /*
- * A single input buffer
+ * One input buffer for each terminal
  */
 static queue_t inputBuffers[NUM_TERMINALS];
+
+/*
+ * One output buffer for each terminal
+ */
+static queue_t outputBuffers[NUM_TERMINALS];
+
+/*
+ * A flag for special '\n' processing of output buffer
+ */
+static int specialMeet[NUM_TERMINALS];
 
 static void
 enqueue_echo(int term, char received)
@@ -216,8 +241,24 @@ TransmitInterrupt(int term)
 {
     Declare_Monitor_Entry_Procedure();
     if (echoBuffers[term].count > 0) {
+        //first output echo buffer
         char received = dequeue(&echoBuffers[term]);
         WriteDataRegister(term, received);
+    } else if (outputBuffers[term].count > 0) {
+        //output buffer
+        char received = dequeue(&outputBuffers[term]);
+        //process special character '\n'
+        if (received == '\n' && specialMeet[term] == FAILED) {
+            specialMeet[term] = SUCCESS;
+            WriteDataRegister(term, '\r');
+            enstack(&outputBuffers[term], '\n');
+        } else if (received == '\n' && specialMeet[term] == SUCCESS){
+            WriteDataRegister(term, '\n');
+            specialMeet[term] = FAILED;
+        } else {
+            //normal character, write as is
+            WriteDataRegister(term, received);
+        }
     } else {
         //nothing to output
         echoing[term] = FAILED;
@@ -228,9 +269,27 @@ extern int
 WriteTerminal(int term, char *buf, int buflen)
 {
     Declare_Monitor_Entry_Procedure();
-    (void) term;
-    (void) buf;
-    (void) buflen;
+    if (buflen == 0) {
+        //given buffer is empty, return immediately
+        return 0;
+    }
+    //assign the given buffer to input buffer's slot
+    inputBuffers[term] = (queue_t){0,0,buflen, buflen, buf};
+    //check if output and transmit interrupt loop is running
+    if (echoing[term] == FAILED) {
+        //initiate the first WriteRegister
+        char first = dequeue(&inputBuffers[term]);
+        //process special character '\n'
+        if (first == '\n') {
+            specialMeet[term] = SUCCESS;
+            WriteDataRegister(term, '\r');
+            enstack(&inputBuffers[term], '\n');
+        } else {
+            WriteDataRegister(term, first);
+        }
+        echoing[term] = SUCCESS;
+    }
+
     return 0;
 }
 
@@ -313,6 +372,8 @@ InitTerminalDriver()
         //Initialize buffers
         echoBuffers[i] = (queue_t){0, 0, 0, SIZE_OF_ECHO_BUFFER, malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};
         inputBuffers[i] = (queue_t){0, 0, 0, SIZE_OF_INPUT_BUFFER, malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};
+        outputBuffers[i] = voidBuffer;
+        specialMeet[i] = FAILED;
     }
     return 0;
 }
