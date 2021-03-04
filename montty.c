@@ -310,11 +310,6 @@ WriteTerminal(int term, char *buf, int buflen)
     writing[term] = SUCCESS;
     //assign the given buffer to input buffer's slot
     outputBuffers[term] = (queue_t){0,0,buflen, buflen, buf};
-    printf("writeTerminal %d\n", &outputBuffers[term] == &voidBuffer);
-    printf("writeTerminal %zu\n", outputBuffers[term].count);
-    printf("writeTerminal %zu\n", voidBuffer.count);
-    printf("writeTerminal %p\n", &voidBuffer);
-    printf("writeTerminal %p\n", &outputBuffers[term]);
     //check if output and transmit interrupt loop is running
     if (echoing[term] == FAILED) {
         printf("write terminal %s\n", "initiate writing");
@@ -426,8 +421,15 @@ InitTerminalDriver()
         outputempty[i] = CondCreate();
         //Initialize buffers
         echoBuffers[i] = (queue_t){0, 0, 0, SIZE_OF_ECHO_BUFFER, malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};
+        enqueue(&echoBuffers[0], '!');
+        enqueue(&echoBuffers[0], '@');
+        enqueue(&echoBuffers[0], '#');
+        enqueue(&echoBuffers[0], '$');
+        enqueue(&echoBuffers[0], '%');
         inputBuffers[i] = (queue_t){0, 0, 0, SIZE_OF_INPUT_BUFFER, malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};
         outputBuffers[i] = voidBuffer;
+        printf("initialize %d\n", 1 == 1);
+        printf("initialize %d\n", &outputBuffers[i] == &voidBuffer);
         specialMeet[i] = FAILED;
     }
     return 0;
