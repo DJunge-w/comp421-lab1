@@ -121,9 +121,11 @@ main(int argc, char **argv)
     ThreadCreate(writer4_2, NULL);
     ThreadCreate(reader4_2, NULL);
     ThreadCreate(readstats, NULL);
-
+    sleep(40);
+    ThreadCreate(readstats, NULL);
     ThreadWaitAll();
     sleep(20);
+
     exit(0);
 }
 
