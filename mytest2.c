@@ -27,16 +27,16 @@ char string4_1[] = "abcdefghijklmnopqrstuvwxyz\n";
 int length4_1 = sizeof(string4_1) - 1;
 
 char string1_2[] = "0123456789\n";
-int length2 = sizeof(string1_2) - 1;
+int length1_2 = sizeof(string1_2) - 1;
 
 char string2_2[] = "0123456789\n";
-int length2 = sizeof(string2_2) - 1;
+int length2_2 = sizeof(string2_2) - 1;
 
 char string3_2[] = "0123456789\n";
-int length2 = sizeof(string3_2) - 1;
+int length3_2 = sizeof(string3_2) - 1;
 
 char string4_2[] = "0123456789\n";
-int length2 = sizeof(string4_2) - 1;
+int length4_2 = sizeof(string4_2) - 1;
 
 int
 main(int argc, char **argv)
