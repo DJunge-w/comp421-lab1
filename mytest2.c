@@ -113,7 +113,7 @@ writer1_2(void *arg)
 {
     (void) arg;
     int status;
-    status = WriteTerminal(1, string1_2, length1_2);
+    status = WriteTerminal(0, string1_2, length1_2);
     if (status != length1_2)
         fprintf(stderr, "Error: writer2 status = %d, length2 = %d\n",
                 status, length1_2);
@@ -135,7 +135,7 @@ writer3_2(void *arg)
 {
     (void) arg;
     int status;
-    status = WriteTerminal(1, string3_2, length3_2);
+    status = WriteTerminal(2, string3_2, length3_2);
     if (status != length3_2)
         fprintf(stderr, "Error: writer2 status = %d, length2 = %d\n",
                 status, length3_2);
@@ -146,7 +146,7 @@ writer4_2(void *arg)
 {
     (void) arg;
     int status;
-    status = WriteTerminal(1, string4_2, length4_2);
+    status = WriteTerminal(3, string4_2, length4_2);
     if (status != length4_2)
         fprintf(stderr, "Error: writer2 status = %d, length2 = %d\n",
                 status, length4_2);
