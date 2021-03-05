@@ -14,28 +14,28 @@ void writer2_2(void *);
 void writer3_2(void *);
 void writer4_2(void *);
 
-int buflen1_1 = 2;
+#define buflen1_1 2
 char read1_1[buflen1_1];
 
-int buflen2_1 = 2;
+#define buflen2_1 2
 char read2_1[buflen2_1];
 
-int buflen3_1 = 2;
+#define buflen3_1 2
 char read3_1[buflen3_1];
 
-int buflen4_1 = 2;
+#define buflen4_1 2
 char read4_1[buflen4_1];
 
-int buflen1_2 = 3;
+#define buflen1_2 3
 char read1_2[buflen1_2];
 
-int buflen2_2 = 3;
+#define buflen2_2 3
 char read2_2[buflen2_2];
 
-int buflen3_2 = 3;
+#define buflen3_2 3
 char read3_2[buflen3_2];
 
-int buflen4_2 = 3;
+#define buflen4_2 3
 char read4_2[buflen4_2];
 
 void reader1_1(void *);
