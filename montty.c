@@ -193,8 +193,6 @@ enqueue_input(int term, char received)
         if (inputstatus == SUCCESS) {
             //enqueue success
             linebreaks[term] = linebreaks[term] + 1;
-            printf("receive linebreaks %d\n", linebreaks[term]);
-            fflush(stdout);
             if (linebreaks[term] == 1) {
                 //signal readers that the line is completed.
                 CondSignal(linecompleted[term]);
@@ -210,8 +208,6 @@ enqueue_input(int term, char received)
         if (inputstatus == SUCCESS) {
             //enqueue success
             linebreaks[term] = linebreaks[term] + 1;
-            printf("receive linebreaks %d\n", linebreaks[term]);
-            fflush(stdout);
             if (linebreaks[term] == 1) {
                 //signal readers that the line is completed.
                 CondSignal(linecompleted[term]);
@@ -266,8 +262,6 @@ TransmitInterrupt(int term)
         outputcompleted[term] = SUCCESS;
         CondSignal(outputempty[term]);
     }
-    printf("transmitInterupt term %d\n", term);
-    printf("transmitInterupt term %d\n", echoBuffers[term].count);
     if (echoBuffers[term].count > 0) {
         //first output echo buffer
         char received = dequeue(&echoBuffers[term]);
@@ -286,7 +280,6 @@ TransmitInterrupt(int term)
         } else {
             //normal character, write as is
             WriteDataRegister(term, received);
-            printf("transmit %c\n", received);
         }
     } else {
         //nothing to output
@@ -307,15 +300,12 @@ WriteTerminal(int term, char *buf, int buflen)
     while (writing[term] == SUCCESS) {
         CondWait(write[term]);
     }
-    printf("write terminal %s\n", "aquired writing");
     waitingwriters[term] = waitingwriters[term] - 1;
     writing[term] = SUCCESS;
     //assign the given buffer to input buffer's slot
     outputBuffers[term] = (queue_t){0,0,buflen, buflen, buf};
     //check if output and transmit interrupt loop is running
     if (echoing[term] == FAILED) {
-        printf("write terminal %s\n", "initiate writing");
-
         //initiate the first WriteRegister
         char first = dequeue(&outputBuffers[term]);
         //process special character '\n'
@@ -324,7 +314,6 @@ WriteTerminal(int term, char *buf, int buflen)
             WriteDataRegister(term, '\r');
             enstack(&outputBuffers[term], '\n');
         } else {
-            printf("WriteDataRegister %c\n", first);
             WriteDataRegister(term, first);
         }
         echoing[term] = SUCCESS;
@@ -355,19 +344,13 @@ ReadTerminal(int term, char *buf, int buflen)
         //Wait for other reader to complete
         CondWait(read[term]);
     }
-    printf("%s\n", "reader wait success");
-    fflush(stdout);
     //Current reader is reading
     waitingreaders[term] = waitingreaders[term] - 1;
     reading[term] = SUCCESS;
-    printf("linebreaks %d\n", linebreaks[term]);
-    fflush(stdout);
     while (linebreaks[term] <= 0) {
         //wait for the line to complete
         CondWait(linecompleted[term]);
     }
-    printf("%s\n", "line completed");
-    fflush(stdout);
     //read the line
     int count = 0;
     while (count < buflen) {
@@ -423,16 +406,16 @@ InitTerminalDriver()
         linecompleted[i] = CondCreate();
         outputempty[i] = CondCreate();
         //Initialize buffers
-        echoBuffers[i] = (queue_t){0, 0, 0, SIZE_OF_ECHO_BUFFER, malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};
-        enqueue(&echoBuffers[1], '!');
-        enqueue(&echoBuffers[1], '@');
-        enqueue(&echoBuffers[1], '#');
-        enqueue(&echoBuffers[1], '$');
-        enqueue(&echoBuffers[1], '%');
-        inputBuffers[i] = (queue_t){0, 0, 0, SIZE_OF_INPUT_BUFFER, malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};
+        echoBuffers[i] = (queue_t){0, 0, 0, SIZE_OF_ECHO_BUFFER,
+                                   malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};
+        inputBuffers[i] = (queue_t){0, 0, 0, SIZE_OF_INPUT_BUFFER,
+                                    malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};
+        enqueue(&inputBuffers[i], '1');
+        enqueue(&inputBuffers[i], '2');
+        enqueue(&inputBuffers[i], '3');
+        enqueue(&inputBuffers[i], '4');
+        enqueue(&inputBuffers[i], '\n');
         outputBuffers[i] = voidBuffer;
-        printf("initialize %d\n", 1 == 1);
-        printf("initialize %d\n", &outputBuffers[i] == &voidBuffer);
         specialMeet[i] = FAILED;
     }
     return 0;

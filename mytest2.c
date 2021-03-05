@@ -14,6 +14,40 @@ void writer2_2(void *);
 void writer3_2(void *);
 void writer4_2(void *);
 
+int buflen1_1 = 2;
+char read1_1[buflen1_1];
+
+int buflen2_1 = 2;
+char read2_1[buflen2_1];
+
+int buflen3_1 = 2;
+char read3_1[buflen3_1];
+
+int buflen4_1 = 2;
+char read4_1[buflen4_1];
+
+int buflen1_2 = 3;
+char read1_2[buflen1_2];
+
+int buflen2_2 = 3;
+char read2_2[buflen2_2];
+
+int buflen3_2 = 3;
+char read3_2[buflen3_2];
+
+int buflen4_2 = 3;
+char read4_2[buflen4_2];
+
+void reader1_1(void *);
+void reader2_1(void *);
+void reader3_1(void *);
+void reader4_1(void *);
+
+void reader1_2(void *);
+void reader2_2(void *);
+void reader3_2(void *);
+void reader4_2(void *);
+
 char string1_1[] = "abcdefghijklmnopqrstuvwxyz\n";
 int length1_1 = sizeof(string1_1) - 1;
 
@@ -51,13 +85,21 @@ main(int argc, char **argv)
     sleep(40);
 
     ThreadCreate(writer1_1, NULL);
+    ThreadCreate(reader1_1, NULL);
     ThreadCreate(writer1_2, NULL);
+    ThreadCreate(reader1_2, NULL);
     ThreadCreate(writer2_1, NULL);
+    ThreadCreate(reader2_1, NULL);
     ThreadCreate(writer2_2, NULL);
+    ThreadCreate(reader2_2, NULL);
     ThreadCreate(writer3_1, NULL);
+    ThreadCreate(reader3_1, NULL);
     ThreadCreate(writer3_2, NULL);
+    ThreadCreate(reader3_2, NULL);
     ThreadCreate(writer4_1, NULL);
+    ThreadCreate(reader4_1, NULL);
     ThreadCreate(writer4_2, NULL);
+    ThreadCreate(reader4_2, NULL);
 
     ThreadWaitAll();
     sleep(20);
@@ -150,4 +192,92 @@ writer4_2(void *arg)
     if (status != length4_2)
         fprintf(stderr, "Error: writer2 status = %d, length2 = %d\n",
                 status, length4_2);
+}
+
+void
+reader1_1(void *arg)
+{
+    (void) arg;
+    int status;
+    status = ReadTerminal(0, read1_1, buflen1_1);
+    fprintf(stdout, "readed buf = %s, buflen1_1 = %d, status = %d\n",
+                read1_1, buflen1_1, status);
+
+}
+
+void
+reader2_1(void *arg)
+{
+    (void) arg;
+    int status;
+    status = ReadTerminal(1, read2_1, buflen2_1);
+    fprintf(stdout, "readed buf = %s, buflen2_1 = %d, status = %d\n",
+            read2_1, buflen2_1, status);
+
+}
+
+void
+reader3_1(void *arg)
+{
+    (void) arg;
+    int status;
+    status = ReadTerminal(2, read3_1, buflen3_1);
+    fprintf(stdout, "readed buf = %s, buflen3_1 = %d, status = %d\n",
+            read3_1, buflen3_1, status);
+
+}
+
+void
+reader4_1(void *arg)
+{
+    (void) arg;
+    int status;
+    status = ReadTerminal(3, read4_1, buflen4_1);
+    fprintf(stdout, "readed buf = %s, buflen4_1 = %d, status = %d\n",
+            read4_1, buflen4_1, status);
+
+}
+
+void
+reader1_2(void *arg)
+{
+    (void) arg;
+    int status;
+    status = ReadTerminal(0, read1_2, buflen1_2);
+    fprintf(stdout, "readed buf = %s, buflen1_2 = %d, status = %d\n",
+            read1_2, buflen1_2, status);
+
+}
+
+void
+reader2_2(void *arg)
+{
+    (void) arg;
+    int status;
+    status = ReadTerminal(1, read2_2, buflen2_2);
+    fprintf(stdout, "readed buf = %s, buflen2_2 = %d, status = %d\n",
+            read2_2, buflen2_2, status);
+
+}
+
+void
+reader3_2(void *arg)
+{
+    (void) arg;
+    int status;
+    status = ReadTerminal(2, read3_2, buflen3_2);
+    fprintf(stdout, "readed buf = %s, buflen3_2 = %d, status = %d\n",
+            read3_2, buflen3_2, status);
+
+}
+
+void
+reader4_2(void *arg)
+{
+    (void) arg;
+    int status;
+    status = ReadTerminal(3, read4_2, buflen4_2);
+    fprintf(stdout, "readed buf = %s, buflen4_2 = %d, status = %d\n",
+            read4_2, buflen4_2, status);
+
 }
