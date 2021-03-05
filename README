@@ -1,0 +1,35 @@
+I have used one slip day for this project.
+
+Data structures:
+The monitor implements a bounded buffer structer for input and output characters.
+It supports adding removing character stored from both end.
+
+The monitor also relies on reading, echoing, linebreaks state flag for implementing
+terminal sharing discipline across multiple readers and writers working on
+the same terminal. There is also a state designed for indicating
+echoing/outputing loop.
+
+Those state flags has corresponding conditional variables provided by thread.h.
+
+Implementation details:
+The feedback loop of outpting characters to a terminal can be initiated by
+two entries procedures, one is WriteTerminal which would call the first WriteDataRegister
+if the loop is not running. The other one is ReceiveInterrupt which envoke first
+echoing call to WritedataRegister if the loop is not already running.
+
+Synchronization and exclusion between writers and writers or readers and readers
+are handled through conditional variables, while exclusion between writers and
+readers are naturally guaranteed by using input and output buffers that are not
+shared across readers and writers.
+
+Testing:
+1)Tested echoing's priority using prefilled echo buffer.
+2)Tested single read and write on one terminal to test exlusion between readers
+and wirters.
+3)Tested multiple read and write on one terminal to test exlusion between readers
+or writers.
+4)Tested multiple read and write on multiple terminals to test concurrency between
+readers and writers on different terminals.
+5)Tested TerminalDeriverStats by eye-balling printed results.
+
+
