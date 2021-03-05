@@ -38,6 +38,8 @@ char *read3_2;
 #define buflen4_2 3
 char *read4_2;
 
+struct termstat *stats;
+
 void reader1_1(void *);
 void reader2_1(void *);
 void reader3_1(void *);
@@ -47,6 +49,8 @@ void reader1_2(void *);
 void reader2_2(void *);
 void reader3_2(void *);
 void reader4_2(void *);
+
+void readstats(void *);
 
 char string1_1[] = "abcdefghijklmnopqrstuvwxyz\n";
 int length1_1 = sizeof(string1_1) - 1;
@@ -91,10 +95,17 @@ main(int argc, char **argv)
     read2_2 = malloc(sizeof(char)*buflen2_2);
     read3_2 = malloc(sizeof(char)*buflen3_2);
     read4_2 = malloc(sizeof(char)*buflen4_2);
+
+    stats = malloc((sizeof struct termstat)*4);
+    int i;
+    for (i = 0; i < 4; i++) {
+        stats[i] = (struct termstat){0, 0, 0, 0};
+    }
     sleep(40);
 
     ThreadCreate(writer1_1, NULL);
     ThreadCreate(reader1_1, NULL);
+    ThreadCreate(readstats, NULL);
     ThreadCreate(writer1_2, NULL);
     ThreadCreate(reader1_2, NULL);
     ThreadCreate(writer2_1, NULL);
@@ -109,6 +120,7 @@ main(int argc, char **argv)
     ThreadCreate(reader4_1, NULL);
     ThreadCreate(writer4_2, NULL);
     ThreadCreate(reader4_2, NULL);
+    ThreadCreate(readstats, NULL);
 
     ThreadWaitAll();
     sleep(20);
@@ -289,4 +301,16 @@ reader4_2(void *arg)
     fprintf(stdout, "readed buf = %s, buflen4_2 = %d, status = %d\n",
             read4_2, buflen4_2, status);
 
+}
+
+void
+readstats(void *arg)
+{
+    (void) arg;
+    TerminalDriverStatistics(stats);
+    int i;
+    for (i = 0; i < 4; i++) {
+        printf("stats %d term, tty_in %d, tty_out %d, user_in %d, user_out %d\n",
+               i, stats[i].tty_in, stats[i].tty_out, stats[i].user_in, stats[i].user_out);
+    }
 }
