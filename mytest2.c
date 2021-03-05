@@ -96,7 +96,7 @@ main(int argc, char **argv)
     read3_2 = malloc(sizeof(char)*buflen3_2);
     read4_2 = malloc(sizeof(char)*buflen4_2);
 
-    stats = malloc((sizeof struct termstat)*4);
+    stats = malloc((sizeof(struct termstat))*4);
     int i;
     for (i = 0; i < 4; i++) {
         stats[i] = (struct termstat){0, 0, 0, 0};
