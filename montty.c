@@ -42,6 +42,10 @@ static int linebreaks[NUM_TERMINALS];
 static int outputcompleted[NUM_TERMINALS];
 
 /*
+ * one termstat for each terminal
+ */
+static struct termstat stats_local[NUM_TERMINALS];
+/*
  * A condition variable for each readTerminal to wait on, only one reader
  * at a time.
  */
@@ -148,17 +152,21 @@ enqueue_echo(int term, char received)
         //send the first WriteDataRegister call
         if (received == '\r') {
             WriteDataRegister(term, '\r');
+            stats_local[term].tty_out = stats_local[term].tty_out + 1;
             enqueue(&echoBuffers[term], '\n');
         } else if (received == '\n') {
             WriteDataRegister(term, '\r');
+            stats_local[term].tty_out = stats_local[term].tty_out + 1;
             enqueue(&echoBuffers[term], '\n');
         } else if (received == '\b' || received == '\177') {
             WriteDataRegister(term, '\b');
+            stats_local[term].tty_out = stats_local[term].tty_out + 1;
             enqueue(&echoBuffers[term], ' ');
             enqueue(&echoBuffers[term], '\b');
         } else {
             //any other character
             WriteDataRegister(term, received);
+            stats_local[term].tty_out = stats_local[term].tty_out + 1;
         }
         echoing[term] = SUCCESS;
     } else {
@@ -240,6 +248,7 @@ ReceiveInterrupt(int term)
 {
     Declare_Monitor_Entry_Procedure();
     char received = ReadDataRegister(term);
+    stats_local[term].tty_in = stats_local[term].tty_in + 1;
     //add received to input buffer
     int input_status = enqueue_input(term, received);
     //add received to echo buffer
@@ -266,6 +275,7 @@ TransmitInterrupt(int term)
         //first output echo buffer
         char received = dequeue(&echoBuffers[term]);
         WriteDataRegister(term, received);
+        stats_local[term].tty_out = stats_local[term].tty_out + 1;
     } else if (outputBuffers[term].count > 0) {
         //output buffer
         char received = dequeue(&outputBuffers[term]);
@@ -273,13 +283,16 @@ TransmitInterrupt(int term)
         if (received == '\n' && specialMeet[term] == FAILED) {
             specialMeet[term] = SUCCESS;
             WriteDataRegister(term, '\r');
+            stats_local[term].tty_out = stats_local[term].tty_out + 1;
             enstack(&outputBuffers[term], '\n');
         } else if (received == '\n' && specialMeet[term] == SUCCESS){
             WriteDataRegister(term, '\n');
+            stats_local[term].tty_out = stats_local[term].tty_out + 1;
             specialMeet[term] = FAILED;
         } else {
             //normal character, write as is
             WriteDataRegister(term, received);
+            stats_local[term].tty_out = stats_local[term].tty_out + 1;
         }
     } else {
         //nothing to output
@@ -312,9 +325,11 @@ WriteTerminal(int term, char *buf, int buflen)
         if (first == '\n') {
             specialMeet[term] = SUCCESS;
             WriteDataRegister(term, '\r');
+            stats_local[term].tty_out = stats_local[term].tty_out + 1;
             enstack(&outputBuffers[term], '\n');
         } else {
             WriteDataRegister(term, first);
+            stats_local[term].tty_out = stats_local[term].tty_out + 1;
         }
         echoing[term] = SUCCESS;
     }
@@ -328,6 +343,7 @@ WriteTerminal(int term, char *buf, int buflen)
     if (waitingwriters[term] > 0) {
         CondSignal(write[term]);
     }
+    stats_local[term].user_in = stats_local[term].user_in + buflen;
     return buflen;
 }
 
@@ -368,6 +384,7 @@ ReadTerminal(int term, char *buf, int buflen)
     if (waitingreaders[term] > 0) {
         CondSignal(read[term]);
     }
+    stats_local[term].user_out = stats_local[term].user_out + count;
     return count;
 }
 
@@ -375,6 +392,7 @@ extern int
 InitTerminal(int term)
 {
     Declare_Monitor_Entry_Procedure();
+    stats_local[term] = (struct termstat){0, 0, 0, 0};
     return InitHardware(term);
 }
 
@@ -382,7 +400,14 @@ extern int
 TerminalDriverStatistics(struct termstat *stats)
 {
     Declare_Monitor_Entry_Procedure();
-    (void) stats;
+    int i;
+    for (i = 0; i < NUM_TERMINALS; i++) {
+
+        stats[i].tty_in = stats_local[i].tty_in;
+        stats[i].tty_out = stats_local[i].tty_out;
+        stats[i].user_in = stats_local[i].user_in;
+        stats[i].user_out = stats_local[i].user_out;
+    }
     return 0;
 }
 
@@ -400,6 +425,7 @@ InitTerminalDriver()
         writing[i] = FAILED;
         linebreaks[i] = 0;
         outputcompleted[i] = FAILED;
+        stats_local[i] = (struct termstat) {-1, -1, -1, -1};
         //Initialize condition variables
         read[i] = CondCreate();
         write[i] = CondCreate();
@@ -410,13 +436,9 @@ InitTerminalDriver()
                                    malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};
         inputBuffers[i] = (queue_t){0, 0, 0, SIZE_OF_INPUT_BUFFER,
                                     malloc(sizeof(char)*SIZE_OF_ECHO_BUFFER)};
-        enqueue(&inputBuffers[i], '1');
-        enqueue(&inputBuffers[i], '2');
-        enqueue(&inputBuffers[i], '3');
-        enqueue(&inputBuffers[i], '4');
-        enqueue(&inputBuffers[i], '\n');
         outputBuffers[i] = voidBuffer;
         specialMeet[i] = FAILED;
     }
+
     return 0;
 }
